@@ -1,78 +1,65 @@
 import streamlit as st
 import sqlite3
 
-# Function to create a database connection
-def create_connection(db_file):
-    conn = None
-    try:
-        conn = sqlite3.connect(db_file)
-        return conn
-    except sqlite3.Error as e:
-        print(e)
-    return conn
+# Create a connection to SQLite database
+conn = sqlite3.connect('recipes.db')
+c = conn.cursor()
 
-# Function to create a new recipe
-def create_recipe(conn, recipe_data):
-    sql = ''' INSERT INTO recipes(name, ingredients, instructions)
-              VALUES(?,?,?) '''
-    cur = conn.cursor()
-    cur.execute(sql, recipe_data)
+# Create recipes table if not exists
+c.execute('''CREATE TABLE IF NOT EXISTS recipes
+             (id INTEGER PRIMARY KEY, name TEXT, ingredients TEXT, instructions TEXT)''')
+conn.commit()
+
+# Function to insert a recipe into the database
+def add_recipe(name, ingredients, instructions):
+    c.execute("INSERT INTO recipes (name, ingredients, instructions) VALUES (?, ?, ?)", (name, ingredients, instructions))
     conn.commit()
-    return cur.lastrowid
 
 # Function to retrieve all recipes from the database
-def get_all_recipes(conn):
-    cur = conn.cursor()
-    cur.execute("SELECT * FROM recipes")
-    return cur.fetchall()
+def get_all_recipes():
+    c.execute("SELECT * FROM recipes")
+    return c.fetchall()
 
+# Function to display the About Us section
+def about_us():
+    st.subheader("About Us")
+    st.write("This is a simple recipe management application developed using Python, by Syed Muhammad Umar Hameed.")
+    st.write("It allows users to store, view, and manage their favorite recipes easily.")
+
+# Main function to run the PyRecipeBook app
 def main():
     st.title("Recipe Book")
 
-    # Create a database connection
-    conn = create_connection("recipebook.db")
-    if conn is None:
-        st.error("Error creating database connection.")
-        return
+    menu = ["Home", "Add Recipe", "View Recipes", "About Us"]
+    choice = st.sidebar.selectbox("Menu", menu)
 
-    # Create recipes table if not exists
-    create_table_sql = '''
-    CREATE TABLE IF NOT EXISTS recipes (
-        id INTEGER PRIMARY KEY AUTOINCREMENT,
-        name TEXT NOT NULL,
-        ingredients TEXT NOT NULL,
-        instructions TEXT NOT NULL
-    );
-    '''
-    conn.execute(create_table_sql)
+    if choice == "Home":
+        st.subheader("Home")
+        st.write("Welcome to Recipe Book! Select an option from the sidebar menu.")
 
-    # Sidebar menu
-    menu_option = st.sidebar.selectbox("Menu", ["View Recipes", "Add Recipe"])
-
-    if menu_option == "View Recipes":
-        st.header("View Recipes")
-        recipes = get_all_recipes(conn)
-        if not recipes:
-            st.write("No recipes found.")
-        else:
-            for recipe in recipes:
-                st.subheader(recipe[1])  # Display recipe name
-                st.write("**Ingredients:**", recipe[2])  # Display ingredients
-                st.write("**Instructions:**", recipe[3])  # Display instructions
-                st.write("---")
-
-    elif menu_option == "Add Recipe":
-        st.header("Add Recipe")
-        recipe_name = st.text_input("Recipe Name")
-        ingredients = st.text_area("Ingredients")
-        instructions = st.text_area("Instructions")
-        if st.button("Add Recipe"):
-            if recipe_name.strip() and ingredients.strip() and instructions.strip():
-                recipe_data = (recipe_name, ingredients, instructions)
-                create_recipe(conn, recipe_data)
-                st.success("Recipe added successfully.")
+    elif choice == "Add Recipe":
+        st.subheader("Add Recipe")
+        recipe_name = st.text_input("Enter Recipe Name")
+        ingredients = st.text_area("Enter Ingredients")
+        instructions = st.text_area("Enter Instructions")
+        if st.button("Add"):
+            if recipe_name and ingredients and instructions:
+                add_recipe(recipe_name, ingredients, instructions)
+                st.success("Recipe added successfully!")
             else:
-                st.error("Please fill in all fields.")
+                st.warning("Please fill in all fields.")
+
+    elif choice == "View Recipes":
+        st.subheader("View Recipes")
+        recipes = get_all_recipes()
+        for recipe in recipes:
+            st.write(f"**{recipe[1]}**")
+            st.write(f"Ingredients: {recipe[2]}")
+            st.write(f"Instructions: {recipe[3]}")
+            st.write("")
+
+    elif choice == "About Us":
+        about_us()
 
 if __name__ == "__main__":
     main()
