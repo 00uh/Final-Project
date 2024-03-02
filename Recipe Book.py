@@ -29,6 +29,8 @@ def about_us():
 # Main function to run the PyRecipeBook app
 def main():
     st.title("Recipe Book")
+   # Company logo
+    st.sidebar.image("logo.jpg", use_column_width=True)
 
     menu = ["Home", "Add Recipe", "View Recipes", "About Us"]
     choice = st.sidebar.selectbox("Menu", menu)
